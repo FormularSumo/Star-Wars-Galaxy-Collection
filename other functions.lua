@@ -86,7 +86,7 @@ function controllerBinds(button)
 end
 
 function wrap(str, limit)
-    limit = limit or 72
+    local limit = limit or 72
     local here = 1
   
     -- the "".. is there because :gsub returns multiple values
@@ -99,26 +99,29 @@ function wrap(str, limit)
     end)
   end
   
-function P1deckEdit(position,name)
-    P1deckCards = binser.readFile('Player 1 deck.txt')
-
+function P1deckEdit(position,name,nosave)
     if name and name[1] == 'Blank' then name = nil end
     P1deckCards[position] = name
 
-    binser.writeFile('Player 1 deck.txt',P1deckCards)
+    if not nosave then
+        binser.writeFile('Player 1 deck.txt',P1deckCards)
+    end
 end
 
-function P1cardsEdit(position,name)
-    P1cards = binser.readFile('Player 1 cards.txt')
-
+function P1cardsEdit(position,name,nosave)
     if name and name[1] == 'Blank' then name = nil end
     P1cards[position] = name
 
-    binser.writeFile('Player 1 cards.txt',P1cards)
+    if not nosave then
+        binser.writeFile('Player 1 cards.txt',P1cards)
+    end
 end
 
 function characterStrength(character)
     if character == nil then return 0 end
+    local stats;
+    local modifier;
+    local offense;
     if character[1] then
         stats = Characters[character[1]]
         modifier = ((character[2] + (60 - character[2]) / 1.7) / 60) * (1 - ((4 - character[3]) * 0.1))
@@ -130,17 +133,21 @@ function characterStrength(character)
     if stats['range'] == 1 then
         offense = ((stats['meleeOffense']*modifier)/800)^4 * 0.9
     else
-        rangedOffense = stats['rangedOffense'] or stats['meleeOffense']
+        local meleeOffense = ((stats['meleeOffense']*modifier)/800)^4
+        local rangedOffense;
 
-        rangedOffense = (rangedOffense/800)^4
-        meleeOffense = ((stats['meleeOffense']*modifier)/800)^4
+        if stats['rangedOffense'] then
+            rangedOffense = ((stats['rangedOffense']*modifier)/800)^4
+        else
+            rangedOffense = meleeOffense
+        end
 
-        rangeFactor = ((stats['range']-1.5)/20)^0.55*4.6
+        local rangeFactor = ((stats['range']-1.5)/20)^0.55*4.6
         
         if rangedOffense < meleeOffense then
             offense = meleeOffense * 0.9 + rangedOffense * 0.1 * rangeFactor^0.1
         else
-            rangeProportion = rangeFactor / (rangeFactor + 1)
+            local rangeProportion = rangeFactor / (rangeFactor + 1)
             offense = meleeOffense * (1-rangeProportion) + rangedOffense * rangeProportion + (rangedOffense * rangeFactor^0.1 - rangedOffense) * 0.1
         end
     end
@@ -151,20 +158,19 @@ function characterStrength(character)
 end
 
 function compareCharacterStrength(character1, character2)
-    return characterStrength(character1) > characterStrength(character2)
+    local strength = characterStrength
+    return strength(character1) > strength(character2)
 end
 
 function tutorial()
-    P1cards = {}
     P1deckCards = {}
+    
+    P1deckEdit(1,{'Grogu',60,4},true)
+    P1deckEdit(2,{'Farmboy Luke Skywalker',60,4},true)
+    P1deckEdit(3,{'C-3PO',60,4},true)
+    P1deckEdit(4,{'R2-D2',60,4},true)
+
     binser.writeFile('Player 1 deck.txt',P1deckCards)
-
-    P1deckEdit(1,{'Grogu',60,4})
-    P1deckEdit(2,{'Farmboy Luke Skywalker',60,4})
-    P1deckEdit(3,{'C-3PO',60,4})
-    P1deckEdit(4,{'R2-D2',60,4})
-
-    binser.writeFile('Player 1 cards.txt',P1cards)
-    P1cards = nil
+    binser.writeFile('Player 1 cards.txt',{})
     UserData['Credits'] = 100
 end

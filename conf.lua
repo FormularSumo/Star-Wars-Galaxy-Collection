@@ -15,5 +15,4 @@ function love.conf(t)
     --Disable unused modules
     t.accelerometerjoystick = false
     t.modules.physics = false
-    t.modules.thread = false
 end

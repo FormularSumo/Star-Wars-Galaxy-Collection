@@ -3,7 +3,7 @@ function love.load()
     push = require 'push'
     Class = require 'class'
     binser = require 'binser'
-    moonshine = require 'moonshine'
+    local moonshine = require 'moonshine'
     
     require 'Card'
     require 'Button'
@@ -19,10 +19,10 @@ function love.load()
     require 'states/DeckeditState'
     require 'campaign'
     require 'other functions'
+    require 'WeaponManager'
     require 'Weapon'
-    require 'Weapon2'
+    require 'ProjectileManager'
     require 'Projectile'
-    require 'Projectile2'
     require 'Card editor'
     require 'Remove card'
     require 'Card viewer'
@@ -56,6 +56,15 @@ function love.load()
 
     backgroundCanvas = love.graphics.newCanvas(1920,1080)
     
+    imageDecoderThreads = {}
+    for i = 1, math.max(love.system.getProcessorCount()-1,1) do --Creates as many threads as the system has minus 1, but at least 1.
+        imageDecoderThreads[i] = love.thread.newThread("ImageDecoderThread.lua")
+    end
+    love.thread.getChannel("imageDecoderQueue"):push("Graphics/Evolution")
+    love.thread.getChannel("imageDecoderQueue"):push("Graphics/Evolution Max")
+    love.thread.getChannel("imageDecoderOutput")
+    imageDecoderThreads[1]:start()
+
     gui = {}
     songs = {}
     paused = false
@@ -99,24 +108,45 @@ function love.load()
     Settings = binser.readFile('Settings.txt')
     love.audio.setVolume(Settings['volume_level'])
 
-    if love.filesystem.getInfo('Player 1 deck.txt') == nil and love.filesystem.getInfo('Player 1 cards.txt') == nil and love.filesystem.getInfo('User Data.txt') == nil then
+    if love.filesystem.getInfo('Player 1 cards.txt') == nil and love.filesystem.getInfo('User Data.txt') == nil then
         tutorial()
     
     else
         if love.filesystem.getInfo('User Data.txt') == nil then
             UserData['Credits'] = 0
+            if Settings['videos'] == nil then Settings['videos'] = true end
             binser.writeFile('User Data.txt',UserData)
+
+            --If any save data is from pre 0.11 (doesn't contain userdata, character levels or evolutions), delete it to avoid crashing
+            if love.filesystem.getInfo('Player 1 deck.txt') ~= nil and binser.readFile('Player 1 deck.txt') ~= nil then
+                P1deckCards = binser.readFile('Player 1 deck.txt')
+                for k, pair in pairs(P1deckCards) do
+                    if P1deckCards[k] ~= nil and not Characters[P1deckCards[k][1]] then
+                        P1deckCards[k] = nil
+                    end
+                end
+                binser.writeFile('Player 1 deck.txt',P1deckCards)
+            end
+            if love.filesystem.getInfo('Player 1 cards.txt') ~= nil and binser.readFile('Player 1 cards.txt') ~= nil then
+                P1cards = binser.readFile('Player 1 cards.txt')
+                for k, pair in pairs(P1cards) do
+                    if P1cards[k] ~= nil and not Characters[P1cards[k][1]] then
+                        P1cards[k] = nil
+                    end
+                end
+                binser.writeFile('Player 1 cards.txt',P1cards)
+                P1cards = nil
+            end
         end
 
-        if love.filesystem.getInfo('Player 1 deck.txt') == nil or binser.readFile('Player 1 deck.txt') == nil then
+        if love.filesystem.getInfo('Player 1 deck.txt') == nil then
             P1deckCards = {}
-            binser.writeFile('Player 1 deck.txt',P1deckCards)
+        else
+            P1deckCards = binser.readFile('Player 1 deck.txt') or {} --In case save file has corrupted, or is a pre-binser file
         end
 
         if love.filesystem.getInfo('Player 1 cards.txt') == nil or binser.readFile('Player 1 cards.txt') == nil then
-            P1cards = {}
-            binser.writeFile('Player 1 cards.txt',P1cards)
-            P1cards = nil
+            binser.writeFile('Player 1 cards.txt',{})
         end
     end
 

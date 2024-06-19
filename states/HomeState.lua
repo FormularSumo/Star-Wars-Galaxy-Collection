@@ -8,7 +8,7 @@ end
 
 function HomeState:enter(partial)
     if partial ~= true then --If partial is equal to 'music' or false or nil
-        background = love.graphics.newImage('Backgrounds/Starry Sky.jpg')
+        background = love.graphics.newImage('Backgrounds/Starry Sky.png')
     end
     if not partial then --If partial is set to false or nil
         if love.math.random(0,1) == 1 then
@@ -17,6 +17,17 @@ function HomeState:enter(partial)
         else
             songs[1] = love.audio.newSource('Music/Ahsoka\'s Theme.oga','stream')
             songs[0] = love.audio.newSource('Music/Across The Stars.oga','stream')
+        end
+    end
+end
+
+function HomeState:exit()
+    for i = 1, love.thread.getChannel("imageDecoderOutput"):getCount() do
+        local result = love.thread.getChannel("imageDecoderOutput"):pop()
+        if result[1] == "Graphics/Evolution" then
+            evolutionImage = love.graphics.newImage(result[2])
+        elseif result[1] == "Graphics/Evolution Max" then
+            evolutionMaxImage = love.graphics.newImage(result[2])
         end
     end
 end

@@ -1,45 +1,64 @@
 Projectile = Class{__includes = BaseState}
 
-function Projectile:init(name,team,xoffset,yoffset)
-    self.projectileCount = name['projectileCount'] or 1
+function Projectile:init(team,xoffset,yoffset,range,imageName)
+    self.team = team
+    self.xoffset = xoffset
+    self.yoffset = yoffset
+    self.range = range
 
-    self.Projectiles = {}
-    for i=1,self.projectileCount do
-        if name['projectile' .. tostring(i)] then
-            if not Projectiles[name['projectile'..tostring(i)]] then
-                Projectiles[name['projectile'..tostring(i)]] = love.graphics.newImage('Graphics/'..name['projectile'..tostring(i)]..'.png')
-            end
-            self.Projectiles[i] = Projectile2(Projectiles[name['projectile'..tostring(i)]],team,xoffset,yoffset,name['range'..tostring(i)] or name['range'])
-        else 
-            self.Projectiles[i] = Projectile2(Projectiles[name['projectile1']],team,xoffset,yoffset,name['range'])
+    self.inverse = imageName == 'Force Drain'
+end
+
+function Projectile:init2(image)
+    self.image = image
+    self.width,self.height = self.image:getDimensions()
+
+    if self.team == 1 then
+        self.xoffset = self.xoffset / 2 - self.width / 2
+        self.yoffset = self.yoffset / 2 - self.height / 2
+    else
+        self.xoffset = self.xoffset / 2 + self.width / 2
+        self.yoffset = self.yoffset / 2 + self.height / 2
+    end
+end
+
+function Projectile:fire(card,card2)
+    if self.image then --Otherwise in theory it could crash if image decoding hasn't finished yet (would have to be extremely slow hardware)
+        self.show = true
+        if self.inverse then
+            self.x = card2.x + self.xoffset
+            self.finalX = card.targetX + self.xoffset
+            self.y = card2.y + self.yoffset
+            self.finalY = card.targetY + self.yoffset
+        else
+            self.x = card.x + self.xoffset
+            self.finalX = card2.targetX + self.xoffset
+            self.y = card.y + self.yoffset
+            self.finalY = card2.targetY + self.yoffset
         end
-    end
-end
 
-function Projectile:hide()
-    for k, pair in pairs(self.Projectiles) do
-        pair.show = false
-    end
-end
+        if (self.team == 1 and not self.inverse) or (self.team == 2 and self.inverse) then
+            self.finalX = self.finalX - 20
+        else
+            self.finalX = self.finalX + 20
+        end
 
-function Projectile:fire(projectile,card,card2)
-    self.Projectiles[projectile]:fire(card,card2)
-end
-
-function Projectile:fireall(card,card2)
-    for k, pair in pairs(self.Projectiles) do
-        pair:fire(card,card2)
+        self.xDistance = tonumber(self.finalX-self.x)
+        self.yDistance = tonumber(self.finalY-self.y)
+        self.angle = math.atan(self.yDistance/self.xDistance)
+        if self.team == 2 then self.angle = self.angle + math.rad(180) end
     end
 end
 
 function Projectile:update(dt)
-    for k, pair in pairs(self.Projectiles) do
-        pair:update(dt)
+    if self.show and self.image then
+        self.x = self.x + (self.xDistance * dt) / 0.9
+        self.y = self.y + (self.yDistance * dt) / 0.9
     end
 end
 
 function Projectile:render()
-    for k, pair in pairs(self.Projectiles) do
-        pair:render()
+    if self.show and self.xDistance then --Checking if self.xDistance here instead of self.image means that if somehow Projectile:fire wasn't run because the image wasn't loaded, a projectile with no destination/movement won't be shown (rather non will)
+        love.graphics.draw(self.image,self.x,self.y,self.angle)
     end
 end

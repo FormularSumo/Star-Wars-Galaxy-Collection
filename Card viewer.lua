@@ -1,10 +1,9 @@
 CardViewer = Class{__includes = BaseState}
 
-function CardViewer:init(name,imageName,level,evolution,inDeck,number,parent,mode)
+function CardViewer:init(name,imagePath,level,evolution,inDeck,number,parent,mode)
     self.name = name
     self.stats = Characters[name]
     self.statsOnDisplay = {}
-    self.name = name
     self.level = level
     self.evolution = evolution
     self.mode = mode or 'stats'
@@ -21,15 +20,39 @@ function CardViewer:init(name,imageName,level,evolution,inDeck,number,parent,mod
         gStateMachine.current.cardDisplayedNumber = number - gStateMachine.current.page * 18
     end
     gStateMachine.current.cardDisplayedInDeck = inDeck
+    
+    self:updateEvolution()
 
     --Create image which toggles between displaying stats and description
-    gui[1] = Button(function() self:swapMode() end,nil,nil,imageName .. '.jpg',390,540)
+    gui[1] = Button(function() self:swapMode() end,nil,nil,imagePath .. '.jpg',390,540)
+end
+
+function CardViewer:updateEvolution()
+    if self.evolution == 4 then
+        self.evolutionImage = gStateMachine.current.images['Graphics/Evolution Max Big']
+        if self.evolutionImage then
+            self.evolutionWidth = self.evolutionImage:getWidth()
+            self.evolutionX = 690 - self.evolutionWidth-12 - 8
+        end
+    else
+        self.evolutionImage = gStateMachine.current.images['Graphics/Evolution Big']
+        if self.evolutionImage then
+            self.evolutionWidth = self.evolutionImage:getWidth()
+            self.evolutionHeight = self.evolutionImage:getHeight()
+            self.evolutionX = {
+                690 - self.evolutionHeight-4,
+                690 - self.evolutionHeight*2-7,
+                690 - self.evolutionHeight*3-10
+            }
+        end
+    end
 end
 
 function CardViewer:changeStat(stat, difference)
     if stat == 'Evolution' then
         if self.evolution + difference >= 0 and self.evolution + difference <= 4 then
             self.evolution = self.evolution + difference
+            self:updateEvolution()
             self:updateStats()
         end
     else
@@ -232,15 +255,20 @@ function CardViewer:render()
     end
 end
 
-function CardViewer:renderInFront()
-    if self.evolution == 4 then
-        love.graphics.draw(evolutionMaxBig,690+((600*(gui[1].scaling-1))/2)-evolutionMaxBig:getWidth()-12,(90+12)-((900*(gui[1].scaling-1))/2),0,gui[1].scaling,gui[1].scaling,(gui[1].scaling-1)/2*evolutionMaxBig:getWidth(),(gui[1].scaling-1)/2*evolutionMaxBig:getWidth())
-    elseif self.evolution > 0 then
-        love.graphics.draw(evolutionBig,690+((600*(gui[1].scaling-1))/2)-evolutionBig:getHeight()-4,(90+12)-((900*(gui[1].scaling-1))/2),math.rad(90),gui[1].scaling,gui[1].scaling,(gui[1].scaling-1)/2*evolutionBig:getWidth(),(gui[1].scaling-1)/2*evolutionBig:getWidth())
-        if self.evolution > 1 then
-            love.graphics.draw(evolutionBig,690+((600*(gui[1].scaling-1))/2)-evolutionBig:getHeight()*2-7,(90+12)-((900*(gui[1].scaling-1))/2),math.rad(90),gui[1].scaling,gui[1].scaling,(gui[1].scaling-1)/2*evolutionBig:getWidth(),(gui[1].scaling-1)/2*evolutionBig:getWidth())
-            if self.evolution > 2 then
-                love.graphics.draw(evolutionBig,690+((600*(gui[1].scaling-1))/2)-evolutionBig:getHeight()*3-10,(90+12)-((900*(gui[1].scaling-1))/2),math.rad(90),gui[1].scaling,gui[1].scaling,(gui[1].scaling-1)/2*evolutionBig:getWidth(),(gui[1].scaling-1)/2*evolutionBig:getWidth())
+function CardViewer:renderInFront() --Unfortunately no more of these draw arguments can be stored easily as variables as they all depend on the scaling of the card image. This could be updated separately when it changes but currently isn't.
+    if self.evolutionImage then --In case offthread loading hasn't finished yet (would have to be a very slow system)
+        local scaling = gui[1].scaling
+        local scalingX = 600*(gui[1].scaling-1)
+        local scalingY = 900*(gui[1].scaling-1)
+        if self.evolution == 4 then
+            love.graphics.draw(self.evolutionImage,self.evolutionX +((scalingX)/2),(90+12)-((scalingY)/2)+8,0,scaling,scaling,(scaling-1)*1.35*self.evolutionWidth,(scaling-1)/3*self.evolutionWidth)
+        elseif self.evolution > 0 then
+            love.graphics.draw(self.evolutionImage,self.evolutionX[1]+((scalingX)/2),(90+12)-((scalingY)/2),math.rad(90),scaling,scaling,(scaling-1)/2*self.evolutionWidth,(scaling-1)/2*self.evolutionWidth)
+            if self.evolution > 1 then
+                love.graphics.draw(self.evolutionImage,self.evolutionX[2]+((scalingX)/2),(90+12)-((scalingY)/2),math.rad(90),scaling,scaling,(scaling-1)/2*self.evolutionWidth,(scaling-1)/2*self.evolutionWidth)
+                if self.evolution > 2 then
+                    love.graphics.draw(self.evolutionImage,self.evolutionX[3]+((scalingX)/2),(90+12)-((scalingY)/2),math.rad(90),scaling,scaling,(scaling-1)/2*self.evolutionWidth,(scaling-1)/2*self.evolutionWidth)
+                end
             end
         end
     end

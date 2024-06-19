@@ -1582,18 +1582,18 @@ Characters = {
     ['weapon1'] = 'Red Lightsaber'
 },
 
-['DarthNoscoper'] = {
-    ['meleeOffense'] = 25387,
-    ['rangedOffense'] = 25387,
-    ['defense'] = 24568,
-    ['evade'] = 0.15,
-    ['range'] = 5,
-    ['range2'] = 3,
-    ['projectile1'] = 'Purple Lightning',
-    ['projectile2'] = 'Yellow Laser',
-    ['projectileCount'] = 69,
-    ['weapon1'] = 'Purple Lightsaber'
-},
+-- ['DarthNoscoper'] = {
+--     ['meleeOffense'] = 25387,
+--     ['rangedOffense'] = 25387,
+--     ['defense'] = 24568,
+--     ['evade'] = 0.15,
+--     ['range'] = 5,
+--     ['range2'] = 3,
+--     ['projectile1'] = 'Purple Lightning',
+--     ['projectile2'] = 'Yellow Laser',
+--     ['projectileCount'] = 69,
+--     ['weapon1'] = 'Purple Lightsaber'
+-- },
 
 ['Dash Rendar'] = {
     ['meleeOffense'] = 14327,
